@@ -10,7 +10,7 @@
 /r (Status: 301)
 ```
 
-Further investigation & guesses lead to the page `http://10.10.145.117/r/a/b/b/i/t/` whose source contains some hidden credentials `alice:**REDACTED**`.
+Further investigation & guesses lead to the page `http://$TARGET_IP/r/a/b/b/i/t/` whose source contains some hidden credentials `alice:**REDACTED**`.
 
 3. These credentials allow to log in as `alice` through SSH.
 
