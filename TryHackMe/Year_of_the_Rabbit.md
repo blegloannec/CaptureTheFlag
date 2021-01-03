@@ -1,5 +1,7 @@
 # Year of the Rabbit
 
+**Room link:** https://tryhackme.com/room/yearoftherabbit
+
 1. `nmap` reveals FTP, SSH and HTTP services on standard ports.
 
 2. `gobuster` (with `SecLists/Discovery/Web-Content/common.txt`) on the web server reveals an interesting `/assets` directory. It contains a file `style.css` which contains a comment suggesting to check the page `/**REDACTED**.php`.

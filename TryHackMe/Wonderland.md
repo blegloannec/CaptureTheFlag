@@ -1,5 +1,7 @@
 # Wonderland
 
+**Room link:** https://tryhackme.com/room/wonderland
+
 1. `nmap` reveals SSH and HTTP services on standard ports.
 
 2. `gobuster` on the web page reveals the following directories:
