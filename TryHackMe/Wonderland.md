@@ -51,7 +51,7 @@ total 20
 
 Because `strings` is not available on the target, we copy `teaParty` to `/tmp` for instance and bring it back to the local machine with `scp` using `alice`.
 
-4. Using strings, we notice one interesting line in particular:
+4. Using `strings`, we notice one interesting line in particular:
 
 ```
 $ strings teaParty
