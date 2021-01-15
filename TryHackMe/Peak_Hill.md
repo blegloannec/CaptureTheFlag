@@ -276,3 +276,12 @@ root@ubuntu-xenial:/root# ls | hd
 root@ubuntu-xenial:/root# ls | xargs cat
 **REDACTED**
 ```
+
+Or, alternatively (character codes in octal):
+
+```
+root@ubuntu-xenial:/root# LC_ALL=C ls -b
+\342\200\200root.txt\342\200\200
+root@ubuntu-xenial:/root# cat $(printf '\342\200\200root.txt\342\200\200')
+**REDACTED**
+```

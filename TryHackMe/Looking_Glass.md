@@ -2,6 +2,8 @@
 
 **Room link:** https://tryhackme.com/room/lookingglass
 
+_A sequel to the [Wonderland](Wonderland.md) challenge room._
+
 1. `nmap -r` reveals SSH services on port 22 and on all ports 9000-13999. This range ports only answer with messages `Lower` or `Higher` before closing the connection.
 
 2. We use binary search to locate the right port.
